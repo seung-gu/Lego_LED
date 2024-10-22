@@ -13,7 +13,6 @@ void loop() {
   int delay_time = random(20, 150);
   analogWrite(ledPin, constrain(brightness + random(-20, 20), 50, 175)); 
   brightness = brightness + fadeAmount;
-  
 
   if (delay_time%2 == 0) {
     if (brightness <= 0){
