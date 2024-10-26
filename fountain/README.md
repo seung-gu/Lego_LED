@@ -1,20 +1,5 @@
-# attiny85_project
-side project using attiny85
+# Wireless LED fountain
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;![image0(2)](https://github.com/user-attachments/assets/0b378992-913f-4d18-89ac-ce3717af062c)
+![image1(2)](https://github.com/user-attachments/assets/dc4040dd-a472-4352-bd60-1b37fb0f4e49)
 
-
-### type of flash
-Arduino ISP by using a PCB board for wiring from Arduino UNO : 
-
-https://www.electronics-lab.com/project/attiny85-8-pin-arduino-programing-shield/
-
-
-### Arduino ISP setup for platformIO
-https://docs.platformio.org/en/latest/platforms/atmelavr.html 
-
-
-### avrdude fuse bit setup
-
-https://www.engbedded.com/fusecalc/
-
+fountain-like LEGO LED supplied by Wireless Power Transfer (WPT)
