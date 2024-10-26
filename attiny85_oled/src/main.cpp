@@ -1,4 +1,5 @@
-// Pins
+/* Source - http://www.technoblogy.com/show?2EA7 */
+
 #include <Arduino.h>
 
 int const clk = 0;
