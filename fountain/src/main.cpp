@@ -404,7 +404,7 @@ int brightness = 0;
 int fadeAmount = 5;   
 
 
-void setup() {
+void setup() { 
   // nothing happens in setup
 }  
 
