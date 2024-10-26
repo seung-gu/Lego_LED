@@ -4,7 +4,7 @@
 
 ### attiny85 board
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;![Alt text](image0(2).jpeg)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;![Alt text](arduino_isp.jpeg)
 
 
 #### type of flash
