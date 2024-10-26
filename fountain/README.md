@@ -1,5 +1,5 @@
 # Wireless LED fountain
 
-![Alt text](image1(2).jpeg)
+![Alt text](fountain_led.jpeg)
 
 fountain-like LEGO LED supplied by Wireless Power Transfer (WPT)
