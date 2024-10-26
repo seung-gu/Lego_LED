@@ -406,7 +406,7 @@ int fadeAmount = 5;
 
 void setup() {
   // nothing happens in setup
-}
+}  
 
 void loop() {
   int delay_time = random(20, 150);
