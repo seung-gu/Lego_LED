@@ -13,3 +13,6 @@ Tiny4kOLED library is used. Other libraries such as u8g2, Adafruit_SSD1306 are t
 The Tiny4kOLED library uses a unique display approach, treating each block of 8 rows as a single "page" and reading pixel data in a bottom-to-top sequence. This data is then represented in hexadecimal format. For example, with a 64x32 pixel OLED display, the memory would store a total of 256 hexadecimal values (64 columns x 4 pages), each corresponding to an 8-row segment of the display.
 
 ![image](https://github.com/user-attachments/assets/2cec513f-f403-4856-9d65-a573549c177c)
+
+It is possible to convert from dot pixel values in the image to byte array as mentioned above in this website :
+https://javl.github.io/image2cpp 
