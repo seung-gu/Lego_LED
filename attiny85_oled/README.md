@@ -34,7 +34,7 @@ It was not easy either to use the code in Tiny4kOLED library due to the followin
 ![image-1](https://github.com/user-attachments/assets/bf0190c8-ee2b-462d-8973-ddb08a502c6d)
 
 (As depicted in the ELF file, 5440 bytes are allocated solely for images!)
-ELF command : readelf --all <filename.elf>
+ELF command : <pre>readelf --all <filename.elf></pre>
 
 While the original blob image is sized at 32x34 pixels, the Tiny4kOLED requires the height to be a multiple of 8, leading to an expansion to 40 rows and an increase in file size.
 
