@@ -581,6 +581,7 @@ uint8_t MAX_x1 = xoff + 53;
 uint8_t batteryperc = 0;
 int8_t increament = 1;
 
+
 void loop() {
 	delay(1);
 	listVoltage[(count/10) % numFrames] = map(sys.getVCC(), 1300, 4000, 0, 100);
