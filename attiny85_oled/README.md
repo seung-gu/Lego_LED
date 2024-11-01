@@ -49,6 +49,7 @@ To minimize unnecessary memory use, it’s more efficient to save only the essen
 
 To recreate this pattern, using a loop outside of the bitmap function is not ideal. This is because the bitmap function’s **startData()**, **sendData()**, and **endData()** commands consume time each time they are initialized, transmitted, and closed. Since **sendData()** handles one byte of address at a time (e.g., 0x0f), it’s possible to send a sequence of bytes in a single call (e.g., 0x0f, 0xff, 0xf0) before reaching **endData()**. Although it cannot send data across multiple pages (y-pixels in SSD1306), sending chunks of bytes together can help reduce transmission time.
 
+<pre>
 Example) If I want to send this data 3 times {0x0f, 
                                               0xff,   
                                               0xf0} 
@@ -56,11 +57,12 @@ Example) If I want to send this data 3 times {0x0f,
                                                     0xff, 0xff, 0xff,
                                                     0xf0, 0xf0, 0xf0}
         However, this approach isn’t feasible, because the data must be stored in flash memory (PROGMEM) in order to read address in **bitmap()**.
+</pre>
 
-        ![Alt text](image-4.png)
+![Alt text](image-4.png)
 
-        One option is to call the **bitmap()** function three times, but this results in **startData()**, **sendData()**, and **endData()** being called separately each time, increasing overhead.
+One option is to call the **bitmap()** function three times, but this results in **startData()**, **sendData()**, and **endData()** being called separately each time, increasing overhead.
 
-        A more efficient solution is to access and read the memory contents 3 times within a single **sendData()** function call. This way, **startData()**, **sendData()**, and **endData()** are each called only once.
+A more efficient solution is to access and read the memory contents 3 times within a single **sendData()** function call. This way, **startData()**, **sendData()**, and **endData()** are each called only once.
 
-        Given that the battery edge shape is at least 50 pixels, this customization saves substantial time by minimizing repeated function calls.
+Given that the battery edge shape is at least 50 pixels, this customization saves substantial time by minimizing repeated function calls.
