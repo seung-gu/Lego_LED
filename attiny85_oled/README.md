@@ -16,3 +16,51 @@ The Tiny4kOLED library uses a unique display approach, treating each block of 8 
 
 It is possible to convert from dot pixel values in the image to byte array as mentioned above in this website :
 https://javl.github.io/image2cpp 
+
+
+
+### Reference code
+https://github.com/upiir/arduino_oled_battery_indicator
+I utilized the code from upiir and converted it to work with the Tiny4kOLED library, as the ATtiny85 lacks sufficient memory to support the u8g2 library.
+
+### Difficulties 
+It was not easy either to use the code in Tiny4kOLED library due to the followings :
+1. ***Memory Constraints***: Images must be stored in flash memory to use the **bitmap()** function. With 30 images at 32x40 pixels, the total size approaches 4k. Additionally, the battery gauge image occupies 0.6k, and the remaining Tiny4kOLED code already consumes around 3.5k. Consequently, the total memory usage exceeds the 8k limit, preventing successful uploads.
+2. ***Protocol Complexity***: The Tiny4kOLED library employs the original SSD1306 protocol, which complicates tasks such as shifting images by a few pixels or repeating them - Explanation : https://www.electronicwings.com/sensors-modules/ssd1306-oled-display. 
+3. ***Limitations of the **bitmap()** Function***: While the **bitmap()** function in Tiny4kOLED is powerful, it lacks the flexibility to repeat or crop images. The specified dimensions must match the image buffer size exactly, necessitating customization of the function to allow for cropping and repetition.
+4. ***Displaying speed***: The ATtiny microcontroller has limited processing capabilities, which results in slower image rendering via I2C on the OLED display. Consequently, when drawing images repeatedly or clearing the screen, the animation may suffer from flickering or reduced performance. Ideally, the entire canvas would be utilized, with updates confined to the regions of interest (ROI). However, due to memory constraints, it is not feasible to accommodate the entire image.
+
+![Alt text](image-1.png)
+(As depicted in the ELF file, 5440 bytes are allocated solely for images!)
+
+While the original blob image is sized at 32x34 pixels, the Tiny4kOLED requires the height to be a multiple of 8, leading to an expansion to 40 rows and an increase in file size.
+
+#### Proposed Solutions
+1. To reduce the memory footprint below 8k, I focused on minimizing image size rather than reducing the overall image dimensions or the number of frames (30). I aimed to optimize the battery image by eliminating unnecessary pixels, such as those in the repetitive patterns of the battery gauge edge.
+2. Useful website (https://javl.github.io/image2cpp/) can convert bitmap image into the format of SSD1306.
+3. Customized **bitmap** function is used to crop or repeat the image.
+4. By customizing **bitmap** function, instead of displaying the original bitmap function for repeated pattern under the loop function, sending the whole data repeatedly and then displaying helped a lot to reduce the speed.
+
+![Alt text](image-2.png)
+For example, to display battery gauge as the above, the whole rectangle area in sky blue color must be written in flash memory to display using **bitmap** function.
+
+![Alt text](image-3.png)
+To minimize unnecessary memory use, it’s more efficient to save only the essential image sections, repeating only the pattern within the red rectangle as needed.
+
+To recreate this pattern, using a loop outside of the bitmap function is not ideal. This is because the bitmap function’s **startData()**, **sendData()**, and **endData()** commands consume time each time they are initialized, transmitted, and closed. Since **sendData()** handles one byte of address at a time (e.g., 0x0f), it’s possible to send a sequence of bytes in a single call (e.g., 0x0f, 0xff, 0xf0) before reaching **endData()**. Although it cannot send data across multiple pages (y-pixels in SSD1306), sending chunks of bytes together can help reduce transmission time.
+
+Example) If I want to send this data 3 times {0x0f, 
+                                              0xff,   
+                                              0xf0} 
+        The ideal case is to copy the data 3 times {0x0f, 0x0f, 0x0f,
+                                                    0xff, 0xff, 0xff,
+                                                    0xf0, 0xf0, 0xf0}
+        However, this approach isn’t feasible, because the data must be stored in flash memory (PROGMEM) in order to read address in **bitmap()**.
+
+        ![Alt text](image-4.png)
+
+        One option is to call the **bitmap()** function three times, but this results in **startData()**, **sendData()**, and **endData()** being called separately each time, increasing overhead.
+
+        A more efficient solution is to access and read the memory contents 3 times within a single **sendData()** function call. This way, **startData()**, **sendData()**, and **endData()** are each called only once.
+
+        Given that the battery edge shape is at least 50 pixels, this customization saves substantial time by minimizing repeated function calls.
