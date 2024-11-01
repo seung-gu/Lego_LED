@@ -41,7 +41,7 @@ While the original blob image is sized at 32x34 pixels, the Tiny4kOLED requires 
 3. Customized **bitmap** function is used to crop or repeat the image.
 4. By customizing **bitmap** function, instead of displaying the original bitmap function for repeated pattern under the loop function, sending the whole data repeatedly and then displaying helped a lot to reduce the speed.
 
-<br><br>&nbsp;
+<br>
 
 ![Alt text](figures/image-2.png)
 For example, to display battery gauge as the above, the whole rectangle area in sky blue color must be written in flash memory to display using **bitmap** function.
@@ -53,6 +53,7 @@ To recreate this pattern, using a loop outside of the bitmap function is not ide
 
 
 Example) If I want to send this data 3 times 
+
 <pre>
     {0x0f, 
     0xff,   
@@ -60,6 +61,7 @@ Example) If I want to send this data 3 times
 </pre>
 
 The ideal case is to copy the data 3 times as it is :
+
 <pre>
     {0x0f, 0x0f, 0x0f,
     0xff, 0xff, 0xff,
