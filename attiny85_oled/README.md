@@ -1,6 +1,6 @@
 # WPT OLED in ATtiny85 board
 
-![Alt text](image.png)
+![Alt text](figures/image.png)
 
 OLED display supplied by Wireless Power Transfer (WPT)
 
@@ -30,7 +30,7 @@ It was not easy either to use the code in Tiny4kOLED library due to the followin
 3. ***Limitations of the **bitmap()** Function***: While the **bitmap()** function in Tiny4kOLED is powerful, it lacks the flexibility to repeat or crop images. The specified dimensions must match the image buffer size exactly, necessitating customization of the function to allow for cropping and repetition.
 4. ***Displaying speed***: The ATtiny microcontroller has limited processing capabilities, which results in slower image rendering via I2C on the OLED display. Consequently, when drawing images repeatedly or clearing the screen, the animation may suffer from flickering or reduced performance. Ideally, the entire canvas would be utilized, with updates confined to the regions of interest (ROI). However, due to memory constraints, it is not feasible to accommodate the entire image.
 
-![Alt text](image-1.png)
+![Alt text](figures/image-1.png)
 (As depicted in the ELF file, 5440 bytes are allocated solely for images!)
 
 While the original blob image is sized at 32x34 pixels, the Tiny4kOLED requires the height to be a multiple of 8, leading to an expansion to 40 rows and an increase in file size.
@@ -43,10 +43,10 @@ While the original blob image is sized at 32x34 pixels, the Tiny4kOLED requires 
 
 <br><br>&nbsp;
 
-![Alt text](image-2.png)
+![Alt text](figures/image-2.png)
 For example, to display battery gauge as the above, the whole rectangle area in sky blue color must be written in flash memory to display using **bitmap** function.
 
-![Alt text](image-3.png)
+![Alt text](figures/image-3.png)
 To minimize unnecessary memory use, it’s more efficient to save only the essential image sections, repeating only the pattern within the red rectangle as needed.
 
 To recreate this pattern, using a loop outside of the bitmap function is not ideal. This is because the bitmap function’s **startData()**, **sendData()**, and **endData()** commands consume time each time they are initialized, transmitted, and closed. Since **sendData()** handles one byte of address at a time (e.g., 0x0f), it’s possible to send a sequence of bytes in a single call (e.g., 0x0f, 0xff, 0xf0) before reaching **endData()**. Although it cannot send data across multiple pages (y-pixels in SSD1306), sending chunks of bytes together can help reduce transmission time.
@@ -69,7 +69,7 @@ The ideal case is to copy the data 3 times as it is :
 However, this approach isn’t feasible, because the data must be stored in flash memory (PROGMEM) in order to read address in **bitmap()**.
 
 
-![Alt text](image-4.png)
+![Alt text](figures/image-4.png)
 
 One option is to call the **bitmap()** function three times, but this results in **startData()**, **sendData()**, and **endData()** being called separately each time, increasing overhead.
 
