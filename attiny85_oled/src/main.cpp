@@ -86,7 +86,7 @@ void loop() {
 	}
 
 	if(diff_x > 0)
-    bitmap_repeat(XOFF+pre_x0, 0, 6, diff_x, diff_x, fill);
+		bitmap_repeat(XOFF+pre_x0, 0, 6, diff_x, diff_x, fill);
 	else if (diff_x < 0)
 		bitmap_repeat(XOFF+x0, 0, 6, -diff_x, 0, battery_indicator_part2); // TODO: remove this part later to avoid flickering
 
