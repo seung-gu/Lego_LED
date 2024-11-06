@@ -1,4 +1,10 @@
-#include "Tiny4kOLED.h"
+#ifndef BATTERY_H
+#define BATTERY_H
+
+#include <avr/pgmspace.h> 
+
+#define CONCAT(a, b) a##b
+#define INIT(size) CONCAT(tiny4koled_init_, size)
 
 // 'blob_00', 32x40px
 const unsigned char epd_bitmap_blob_00 [] PROGMEM = {
@@ -483,3 +489,5 @@ const unsigned char fill[] PROGMEM =
 	0xFF,
 	0x0D
 };
+
+#endif

@@ -4,10 +4,6 @@
 SystemStatus sys;
 
 
-const uint8_t numFrames = 10;
-uint8_t listVoltage[numFrames] = {0};
-uint8_t batteryperc = 0;
-
 const uint8_t XOFF = 3;
 const uint8_t X0 = 0;
 const uint8_t X1 = 52;
@@ -45,32 +41,30 @@ void bitmap_repeat(uint8_t x_off, uint8_t y0, uint8_t y1, uint8_t repeat, uint8_
   oled.setCursor(0, 0);
 }
 
-void setup() {
-  oled.begin(64, 48, sizeof(tiny4koled_init_64x48r), tiny4koled_init_64x48r);
 
+#define OLED_WIDTH 64
+#define OLED_HEIGHT 48
+#define OLED_SIZE 64x48r
+
+
+void setup() {
+  oled.begin(OLED_WIDTH, OLED_HEIGHT, sizeof(INIT(OLED_SIZE)), INIT(OLED_SIZE));
   oled.off();
   oled.bitmap(0, 0, 3, 6, battery_indicator_part1);
   bitmap_repeat(3, 0, 6, 53, -1, battery_indicator_part2);
   oled.bitmap(56, 0, 64, 6, battery_indicator_part3);
-
+  oled.setContrast(20);
+  oled.setDisplayClock(2, 1);
   oled.on();
 }
 
 
 void loop() {
   static uint8_t pre_x0 = 0;
-  static int count = 0;
   static uint8_t anim_frame = 0; // animation frame for the blob / metaballs animation
   
-  listVoltage[(count/10) % numFrames] = map(sys.getVCC(), 1300, 4000, 0, 100);
-
-  int sum = 0;
-  for (int i = 0; i < numFrames; i++){
-    sum += listVoltage[i];
-  }
-  batteryperc = sum / numFrames;
-  
-  int gauge = map(batteryperc, 0, 100, 0, 53);
+  int voltage = sys.getVCC();
+  int gauge = map(voltage, 1300, 5000, 0, 53); //1.3V to 5V to operate OLED
   gauge = max(0, min(gauge, 52));
 
   uint8_t x0 = gauge;
@@ -88,7 +82,7 @@ void loop() {
   if(diff_x > 0)
     bitmap_repeat(XOFF+pre_x0, 0, 6, diff_x, diff_x, fill);
   else if (diff_x < 0)
-    bitmap_repeat(XOFF+x0, 0, 6, -diff_x, 0, battery_indicator_part2); // TODO: remove this part later to avoid flickering
+    oled.bitmap(XOFF+pre_x0-1, 0, XOFF+pre_x0, 6, fill_init);
 
   if (x0 + 32 < X1){
     oled.bitmap(XOFF+x0+1, 1, XOFF+x0+1+32, 5, epd_bitmap_allArray[anim_frame]);
@@ -101,10 +95,5 @@ void loop() {
 
   pre_x0 = x0;
 
-  count++;
-  if (count == 10000){ // to avoid overflow
-    count = 0;
-  }
-
-  delay(5);
+  delay(1);
 }
