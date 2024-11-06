@@ -96,22 +96,17 @@ Given that the battery edge shape is at least 50 pixels, this customization save
 5. To reduce power consumption, some special setups are applied in HW and SW.
 - Software: Lower operating clock for ATtiny85 and OLED is used. Brightness is set as very dimmed condition. 
 
-<br>
-<figure style="text-align: center;">
-    <img src=https://github.com/user-attachments/assets/95217136-2894-43af-8f2d-bc97002f0a04 alt="SSD1306 Datasheet" style="display: block; margin: 0 auto;">
-    <figcaption style="text-align: center;"><em>Brightness setting in SSD1306 Datasheet (p.36)</em></figcaption>
-</figure>
+| ![https://github.com/user-attachments/assets/95217136-2894-43af-8f2d-bc97002f0a04](https://github.com/user-attachments/assets/95217136-2894-43af-8f2d-bc97002f0a04) | 
+|:--:| 
+| *Brightness setting in SSD1306 Datasheet (p.36)* |
 
 ```
 oled.setContrast(20);
 ```
 
-<br>
-<figure style="text-align: center;">
-    <img src=https://github.com/user-attachments/assets/0e007b3d-ebde-4610-ab7a-a71653b9e519
-        alt="SSD1306 Datasheet" style="display: block; margin: 0 auto;">
-    <figcaption style="text-align: center;"><em>Clock setting in SSD1306 Datasheet (p.22)</em></figcaption>
-</figure>
+| ![https://github.com/user-attachments/assets/0e007b3d-ebde-4610-ab7a-a71653b9e519](https://github.com/user-attachments/assets/0e007b3d-ebde-4610-ab7a-a71653b9e519) | 
+|:--:| 
+| *Clock setting in SSD1306 Datasheet (p.22)* |
 
 ```
 oled.setDisplayClock(2, 1);
