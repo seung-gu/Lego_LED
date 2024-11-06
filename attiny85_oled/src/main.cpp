@@ -46,7 +46,7 @@ void bitmap_repeat(uint8_t x_off, uint8_t y0, uint8_t y1, uint8_t repeat, uint8_
 }
 
 void setup() {
-  oled.begin(64, 48, sizeof(tiny4koled_init_64x48br), tiny4koled_init_64x48br);
+  oled.begin(64, 48, sizeof(tiny4koled_init_64x48r), tiny4koled_init_64x48r);
 
   oled.off();
   oled.bitmap(0, 0, 3, 6, battery_indicator_part1);
