@@ -98,7 +98,7 @@ Given that the battery edge shape is at least 50 pixels, this customization save
 
 <br>
 <figure>
-    <img src=image.png alt="SSD1306 Datasheet">
+    <img src=https://github.com/user-attachments/assets/3ee8ba80-7e1f-4b0d-b9a5-1f79d38eee7a alt="SSD1306 Datasheet">
     <figcaption><em>Brightness setting in SSD1306 Datasheet (p.36)</em></figcaption>
 </figure>
 
@@ -106,11 +106,10 @@ Given that the battery edge shape is at least 50 pixels, this customization save
 oled.setContrast(20);
 ```
 
-
 <br>
 
 <figure>
-    <img src=image-1.png alt="SSD1306 Datasheet">
+    <img src=[image-1.png](https://github.com/user-attachments/assets/0e007b3d-ebde-4610-ab7a-a71653b9e519) alt="SSD1306 Datasheet">
     <figcaption><em>Clock setting in SSD1306 Datasheet (p.22)</em></figcaption>
 </figure>
 
