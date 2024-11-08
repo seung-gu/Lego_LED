@@ -20,6 +20,8 @@
 #define BATTERY_PART1_WIDTH 3
 #define BATTERY_PART2_WIDTH 53
 
+#define IMAGE_OFF_X 0 // start of the image (battery indicator)
+#define XOFF IMAGE_OFF_X + 3 // start of the battery gauge
 #define X1 BATTERY_PART2_WIDTH-1
 
 // 'blob_00', 32x40px
@@ -483,6 +485,8 @@ const unsigned char fill[] PROGMEM =
 #define BATTERY_PART1_WIDTH 3
 #define BATTERY_PART2_WIDTH 40
 
+#define IMAGE_OFF_X 8 // start of the image (battery indicator)
+#define XOFF IMAGE_OFF_X + 3 // start of the battery gauge
 #define X1 BATTERY_PART2_WIDTH-1
 
 // 'blob_00', 24x24px -> 24x32px (00~29)

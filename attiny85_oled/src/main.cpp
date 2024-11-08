@@ -6,9 +6,6 @@
 
 SystemStatus sys;
 
-const uint8_t IMAGE_OFF_X = 8;
-const uint8_t XOFF = IMAGE_OFF_X + 3;
-const uint8_t X0 = 0;
 const uint8_t PACE = 1;
 
 // display only x0~x1 area of fixed sized bitmap. width must be the same as bitmap width
