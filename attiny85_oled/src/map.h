@@ -15,10 +15,11 @@
 #define BLOB_Y1 1
 #define BLOB_Y2 5
 
-#define BATTERY_WIDTH 64
+#define BATTERY_WIDTH BATTERY_WIDTH BATTERY_PART1_WIDTH + BATTERY_PART2_WIDTH + BATTERY_PART3_WIDTH
 #define BATTERY_HEIGHT 48
 #define BATTERY_PART1_WIDTH 3
 #define BATTERY_PART2_WIDTH 53
+#define BATTERY_PART3_WIDTH 8
 
 #define IMAGE_OFF_X 0 // start of the image (battery indicator)
 #define XOFF IMAGE_OFF_X + 3 // start of the battery gauge
@@ -480,12 +481,13 @@ const unsigned char fill[] PROGMEM =
 #define BLOB_Y1 0
 #define BLOB_Y2 4
 
-#define BATTERY_WIDTH 48
+#define BATTERY_WIDTH BATTERY_PART1_WIDTH + BATTERY_PART2_WIDTH + BATTERY_PART3_WIDTH
 #define BATTERY_HEIGHT 32
 #define BATTERY_PART1_WIDTH 3
-#define BATTERY_PART2_WIDTH 40
+#define BATTERY_PART2_WIDTH 42
+#define BATTERY_PART3_WIDTH 5
 
-#define IMAGE_OFF_X 8 // start of the image (battery indicator)
+#define IMAGE_OFF_X 7 // start of the image (battery indicator)
 #define XOFF IMAGE_OFF_X + 3 // start of the battery gauge
 #define X1 BATTERY_PART2_WIDTH-1
 
