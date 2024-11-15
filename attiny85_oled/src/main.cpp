@@ -1,4 +1,4 @@
-#define OLED_64x32
+#define OLED_72x40
 
 #include "Tiny4kOLED.h"
 #include "SystemStatus.h"
@@ -77,13 +77,13 @@ void loop() {
   }
 
   if(diff_x > 0)
-    bitmap_repeat(XOFF+pre_x0, 0, OLED_HEIGHT/8, diff_x, diff_x, fill);
+    bitmap_repeat(XOFF+pre_x0, 0, BATTERY_HEIGHT/8, diff_x, diff_x, fill);
   else if (diff_x < 0)
-    oled.bitmap(XOFF+pre_x0-1, 0, XOFF+pre_x0, OLED_HEIGHT/8, fill_init);
+    oled.bitmap(XOFF+pre_x0-1, 0, XOFF+pre_x0, BATTERY_HEIGHT/8, fill_init);
 
   if (x0 + BLOB_WIDTH < X1){
     oled.bitmap(XOFF+x0+1, BLOB_Y1, XOFF+x0+1+BLOB_WIDTH, BLOB_Y2, epd_bitmap_allArray[anim_frame]);
-    oled.bitmap(XOFF+x0+1+BLOB_WIDTH, 0, XOFF+x0+2+BLOB_WIDTH, OLED_HEIGHT/8, battery_indicator_part2); // to remove afterimage
+    oled.bitmap(XOFF+x0+1+BLOB_WIDTH, 0, XOFF+x0+2+BLOB_WIDTH, BATTERY_HEIGHT/8, battery_indicator_part2); // to remove afterimage
   }else{
     bitmap_roi(XOFF+x0+1, BLOB_Y1, X1+XOFF+1, BLOB_Y2, BLOB_WIDTH, epd_bitmap_allArray[anim_frame]);
   }
