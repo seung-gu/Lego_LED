@@ -50,7 +50,7 @@ void setup() {
   bitmap_repeat(IMAGE_OFF_X+BATTERY_PART1_WIDTH, 0, BATTERY_HEIGHT/8, BATTERY_PART2_WIDTH, -1, battery_indicator_part2);
   oled.bitmap(IMAGE_OFF_X+BATTERY_PART1_WIDTH+BATTERY_PART2_WIDTH, 0, IMAGE_OFF_X+BATTERY_WIDTH, BATTERY_HEIGHT/8, battery_indicator_part3);
   
-  oled.setContrast(20);       // oled brightness 0~255
+  oled.setContrast(5);       // oled brightness 0~255
   oled.setDisplayClock(2, 1); // clock speed down to 1/2 from default
   oled.on();
 }
@@ -92,5 +92,5 @@ void loop() {
 
   pre_x0 = x0;
 
-  delay(1);
+  delay(10);
 }
