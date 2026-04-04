@@ -1,5 +1,7 @@
 #include <avr/io.h>
 #include <avr/pgmspace.h>
+#include <avr/sleep.h>
+#include <avr/interrupt.h>
 #include "i2c.h"
 #include "ssd1306.h"
 #include "duck.h"
@@ -12,27 +14,24 @@
 static void delay_ms(uint16_t ms) {
     volatile uint16_t i;
     while (ms--) {
-        i = 12;  // ~1ms at 128kHz
+        i = 100;  // ~1ms at 1MHz
         while (i--);
     }
 }
 
 // read VCC using internal 1.1V bandgap reference
 static uint16_t read_vcc(void) {
-    // REFS=000 (VCC ref), MUX=1100 (1.1V bandgap input)
-    ADMUX = 0x0C;
-    // enable ADC, prescaler /2 (128kHz/2 = 64kHz ADC clock)
-    ADCSRA = (1 << ADEN) | (1 << ADPS0);
+    ADMUX = 0x0C;  // VCC ref, bandgap input
+    ADCSRA = (1 << ADEN) | (1 << ADPS1) | (1 << ADPS0);  // enable, /8
     delay_ms(2);
 
-    ADCSRA |= (1 << ADSC);         // start conversion
-    while (ADCSRA & (1 << ADSC));   // wait
+    ADCSRA |= (1 << ADSC);
+    while (ADCSRA & (1 << ADSC));
 
     uint16_t adc_val = ADC;
-    ADCSRA &= ~(1 << ADEN);        // disable ADC (save power)
+    ADCSRA &= ~(1 << ADEN);  // disable ADC
 
     if (adc_val == 0) return 5000;
-    // VCC(mV) = 1.1V * 1023 / adc_val * 1000
     return (uint16_t)(1125300UL / adc_val);
 }
 
@@ -42,6 +41,48 @@ static int16_t map_val(int16_t x, int16_t in_min, int16_t in_max,
                      / (in_max - in_min) + out_min);
 }
 
+// watchdog interrupt - empty, just wakes MCU
+ISR(WDT_vect) {}
+
+// enter power-down sleep, wake by watchdog after ~250ms
+static void sleep_250ms(void) {
+    cli();
+    MCUSR &= ~(1 << WDRF);
+    // timed sequence: must write WDP within 4 cycles of setting WDCE
+    __asm__ __volatile__(
+        "ldi r16, %[wdce_wde]"   "\n\t"
+        "ldi r17, %[wdie_wdp]"   "\n\t"
+        "out %[wdtcr], r16"      "\n\t"
+        "out %[wdtcr], r17"      "\n\t"
+        :
+        : [wdtcr] "I" (_SFR_IO_ADDR(WDTCR)),
+          [wdce_wde] "M" ((1 << WDCE) | (1 << WDE)),
+          [wdie_wdp] "M" ((1 << WDIE) | (1 << WDP1))
+        : "r16", "r17"
+    );
+    sei();
+
+    set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+    sleep_enable();
+    sleep_cpu();
+    sleep_disable();
+
+    // disable watchdog
+    cli();
+    MCUSR &= ~(1 << WDRF);
+    __asm__ __volatile__(
+        "ldi r16, %[wdce_wde]"   "\n\t"
+        "ldi r17, 0"             "\n\t"
+        "out %[wdtcr], r16"      "\n\t"
+        "out %[wdtcr], r17"      "\n\t"
+        :
+        : [wdtcr] "I" (_SFR_IO_ADDR(WDTCR)),
+          [wdce_wde] "M" ((1 << WDCE) | (1 << WDE))
+        : "r16", "r17"
+    );
+    sei();
+}
+
 int main(void) {
     uint8_t pre_x0 = 0;
     uint8_t anim_frame = 0;
@@ -49,6 +90,9 @@ int main(void) {
     uint8_t x0;
     int8_t diff_x;
     int16_t voltage, gauge;
+
+    ADCSRA &= ~(1 << ADEN);
+    PRR = (1 << PRTIM1) | (1 << PRUSI);
 
     i2c_init();
     ssd1306_init();
@@ -69,7 +113,6 @@ int main(void) {
         x0 = (uint8_t)gauge;
         diff_x = (int8_t)(x0 - pre_x0);
 
-        // pace control
         if (diff_x > PACE) {
             x0 = x0 - (diff_x - PACE);
             diff_x = PACE;
@@ -78,7 +121,6 @@ int main(void) {
             diff_x = -PACE;
         }
 
-        // erase trailing columns
         if (diff_x > 0) {
             for (pg = 1; pg < 4; pg++) {
                 ssd1306_set_cursor(pre_x0, pg);
@@ -108,10 +150,8 @@ int main(void) {
             ssd1306_data_end();
         }
 
-        // draw duck on pages 1-3
         ssd1306_bitmap(x0, 1, x0 + DUCK_W, 4, epd_bitmap_duckArray[anim_frame]);
 
-        // draw page 4 with ground line OR'd in
         const uint8_t *fdata = epd_bitmap_duckArray[anim_frame];
         ssd1306_set_cursor(x0, 4);
         ssd1306_data_start();
@@ -122,7 +162,7 @@ int main(void) {
         anim_frame = (anim_frame + 1) % DUCK_FRAMES;
         pre_x0 = x0;
 
-        delay_ms(200);
+        sleep_250ms();
     }
 
     return 0;

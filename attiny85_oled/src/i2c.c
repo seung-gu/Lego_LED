@@ -16,7 +16,8 @@
 #define SCL_OUT()  (DDRB |= (1 << SCL_BIT))
 
 static void i2c_delay(void) {
-    // at 128kHz, instructions are slow enough
+    // ~2us at 1MHz
+    __asm__ __volatile__("nop");
     __asm__ __volatile__("nop");
 }
 
