@@ -17,5 +17,6 @@ void ssd1306_data_byte(uint8_t d);
 void ssd1306_data_end(void);
 void ssd1306_clear(void);
 void ssd1306_bitmap(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, __code const uint8_t *bmp);
+void ssd1306_print_hex(uint8_t x, uint8_t page, uint8_t val);
 
 #endif

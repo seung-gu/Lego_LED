@@ -6,7 +6,10 @@
 #define OLED_W   72
 #define PACE     1
 
-// ---- delay (approximate, ~1ms at 24MHz 1T) ----
+// delay used at two speeds:
+// - before clock switch: 11MHz (i=2400 ≈ 1ms)
+// - after clock switch: 32KHz (i=2400 ≈ 344ms)
+// use delay_ms_fast() before switch, delay_loops() after
 static void delay_ms(uint16_t ms) {
     uint16_t i;
     while (ms--) {
@@ -15,31 +18,13 @@ static void delay_ms(uint16_t ms) {
     }
 }
 
-// ---- ADC: read VCC via internal bandgap (ch15) ----
-static uint16_t read_vcc(void) {
-    uint16_t adc_val;
-
-    // right-justified result, slow ADC clock for accuracy
-    ADCCFG = 0x2F;                      // RESFMT=1, speed=15
-    ADC_CONTR = ADC_POWER | 0x0F;       // power on, ch15 (bandgap ~1.19V)
-    delay_ms(1);
-
-    ADC_CONTR |= ADC_START;
-    while (!(ADC_CONTR & ADC_FLAG));
-    ADC_CONTR &= ~ADC_FLAG;
-
-    adc_val = ((uint16_t)ADC_RES << 8) | ADC_RESL;
-    if (adc_val == 0) return 5000;
-
-    // VCC(mV) = 1190 * 1024 / adc_val
-    return (uint16_t)(1218560UL / adc_val);
-}
-
-// ---- map (same as Arduino map) ----
-static int16_t map_val(int16_t x, int16_t in_min, int16_t in_max,
-                       int16_t out_min, int16_t out_max) {
-    return (int16_t)((int32_t)(x - in_min) * (out_max - out_min)
-                     / (in_max - in_min) + out_min);
+// ~1ms at 32KHz (just a few loop iterations)
+static void delay_32k(uint16_t ms) {
+    uint16_t i;
+    while (ms--) {
+        i = 3;
+        while (i--);
+    }
 }
 
 void main(void) {
@@ -48,11 +33,11 @@ void main(void) {
     uint8_t c, pg;
     uint8_t x0;
     int8_t diff_x;
-    int16_t voltage, gauge;
     __code const uint8_t *fdata;
 
-    WDT_CONTR = 0x00;          // disable watchdog
+    WDT_CONTR = 0x00;
 
+    // OLED init at 11MHz (fast)
     i2c_init();
     ssd1306_init();
 
@@ -63,16 +48,12 @@ void main(void) {
         ssd1306_data_byte(0x80);
     ssd1306_data_end();
 
-    while (1) {
-        voltage = (int16_t)read_vcc();
-        gauge = map_val(voltage, 1300, 5000, 0, OLED_W - DUCK_WIDTH);
-        if (gauge < 0) gauge = 0;
-        if (gauge > OLED_W - DUCK_WIDTH) gauge = OLED_W - DUCK_WIDTH;
+    // no clock switch — stay at 11MHz, use STOP mode for power saving
 
-        x0 = (uint8_t)gauge;
+    while (1) {
+        x0 = 0;
         diff_x = (int8_t)(x0 - pre_x0);
 
-        // pace control
         if (diff_x > PACE) {
             x0 = x0 - (diff_x - PACE);
             diff_x = PACE;
@@ -81,7 +62,6 @@ void main(void) {
             diff_x = -PACE;
         }
 
-        // erase trailing columns
         if (diff_x > 0) {
             for (pg = 1; pg < 4; pg++) {
                 ssd1306_set_cursor(pre_x0, pg);
@@ -93,7 +73,7 @@ void main(void) {
             ssd1306_set_cursor(pre_x0, 4);
             ssd1306_data_start();
             for (c = 0; c < (uint8_t)diff_x; c++)
-                ssd1306_data_byte(0x80);    // restore ground line
+                ssd1306_data_byte(0x80);
             ssd1306_data_end();
         } else if (diff_x < 0) {
             uint8_t trail = pre_x0 + DUCK_WIDTH + diff_x;
@@ -111,10 +91,8 @@ void main(void) {
             ssd1306_data_end();
         }
 
-        // draw duck on pages 1-3
         ssd1306_bitmap(x0, 1, x0 + DUCK_WIDTH, 4, duck_frames[anim_frame]);
 
-        // draw page 4 with ground line OR'd in
         fdata = duck_frames[anim_frame];
         ssd1306_set_cursor(x0, 4);
         ssd1306_data_start();
@@ -125,6 +103,13 @@ void main(void) {
         anim_frame = (anim_frame + 1) % DUCK_FRAMES;
         pre_x0 = x0;
 
-        delay_ms(10);
+        // STOP mode sleep ~100ms, MCU ~0.4µA during stop
+        // wake-up timer uses 32KHz IRC (still running in stop)
+        // count = time_ms * 32.768 / 16 ≈ time_ms * 2
+        WKTCL = 0x90;           // low byte (400 & 0xFF = 0x90)
+        WKTCH = 0x81;           // bit7=enable, bit0=1 (400 >> 8 = 1) → ~200ms
+        PCON |= 0x02;           // enter power-down
+        __asm nop __endasm;
+        __asm nop __endasm;
     }
 }

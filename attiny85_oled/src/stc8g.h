@@ -10,7 +10,7 @@
 // --- System ---
 __sfr __at(0x87) PCON;
 __sfr __at(0x8E) AUXR;
-__sfr __at(0xA2) P_SW2;
+__sfr __at(0xBA) P_SW2;
 
 // --- Interrupt ---
 __sfr __at(0xA8) IE;
@@ -55,11 +55,23 @@ __sfr __at(0xDE) ADCCFG;
 
 // --- Clock ---
 __sfr __at(0x97) CLKDIV;
+__sfr __at(0x9D) IRCBAND;
+__sfr __at(0x9E) IRTRIM;
 
 // --- Watchdog ---
 __sfr __at(0xC1) WDT_CONTR;
 
+// --- Power-down wake-up timer ---
+__sfr __at(0xAA) WKTCL;   // low byte (count bits [7:0])
+__sfr __at(0xAB) WKTCH;   // high byte (bit7=enable, bits[6:0]=count[14:8])
+
 // --- Peripheral switch ---
 #define EAXFR  0x80
+
+// --- Extended SFR (access via xdata with EAXFR=1) ---
+#define HIRCCR  (*(unsigned char volatile __xdata *)0xFE02)
+#define IRC32KCR (*(unsigned char volatile __xdata *)0xFE04)
+#define CLKSEL  (*(unsigned char volatile __xdata *)0xFE00)
+#define CKSEL_IRC32K  0x03
 
 #endif

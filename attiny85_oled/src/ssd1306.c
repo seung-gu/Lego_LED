@@ -78,10 +78,10 @@ void ssd1306_init(void) {
     ssd1306_cmd2(0x8D, 0x14);      // charge pump enable
 
     // --- from main.cpp setup() ---
-    ssd1306_cmd2(0xD3, 0x08);      // display offset: 8
+    ssd1306_cmd2(0xD3, 0x00);      // display offset: 0
     ssd1306_cmd2(0xAD, 0x10);      // internal IREF 19uA (low power)
     ssd1306_cmd2(0x81, 0x05);      // contrast: 5
-    ssd1306_cmd2(0xD5, 0x11);      // display clock: divRatio=2, oscFreq=1
+    ssd1306_cmd2(0xD5, 0x11);      // display clock: divRatio=2, oscFreq=1 (~140kHz)
 
     // --- defaults ---
     ssd1306_cmd(0x40);             // start line: 0
@@ -94,4 +94,42 @@ void ssd1306_init(void) {
 
     ssd1306_clear();
     ssd1306_cmd(0xAF);             // display on
+}
+
+// minimal 4x8 hex font (0-F)
+__code const uint8_t hex_font[][4] = {
+    {0x7E,0x42,0x42,0x7E}, // 0
+    {0x00,0x44,0x7E,0x40}, // 1
+    {0x62,0x52,0x4A,0x46}, // 2
+    {0x42,0x4A,0x4A,0x7E}, // 3
+    {0x0E,0x08,0x08,0x7E}, // 4
+    {0x4E,0x4A,0x4A,0x7A}, // 5
+    {0x7E,0x4A,0x4A,0x7A}, // 6
+    {0x02,0x02,0x02,0x7E}, // 7
+    {0x7E,0x4A,0x4A,0x7E}, // 8
+    {0x4E,0x4A,0x4A,0x7E}, // 9
+    {0x7E,0x0A,0x0A,0x7E}, // A
+    {0x7E,0x48,0x48,0x78}, // B (b)
+    {0x7E,0x42,0x42,0x42}, // C
+    {0x78,0x48,0x48,0x7E}, // D (d)
+    {0x7E,0x4A,0x4A,0x42}, // E
+    {0x7E,0x0A,0x0A,0x02}, // F
+};
+
+void ssd1306_print_hex(uint8_t x, uint8_t page, uint8_t val) {
+    uint8_t i, nibble;
+    // high nibble
+    nibble = (val >> 4) & 0x0F;
+    ssd1306_set_cursor(x, page);
+    ssd1306_data_start();
+    for (i = 0; i < 4; i++) ssd1306_data_byte(hex_font[nibble][i]);
+    ssd1306_data_byte(0x00); // gap
+    ssd1306_data_end();
+    // low nibble
+    nibble = val & 0x0F;
+    ssd1306_set_cursor(x + 5, page);
+    ssd1306_data_start();
+    for (i = 0; i < 4; i++) ssd1306_data_byte(hex_font[nibble][i]);
+    ssd1306_data_byte(0x00);
+    ssd1306_data_end();
 }

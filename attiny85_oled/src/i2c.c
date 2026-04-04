@@ -5,11 +5,7 @@
 #define SDA P3_3
 
 static void i2c_delay(void) {
-    // ~2us at 24MHz (adjust NOP count for desired I2C speed)
-    __asm nop __endasm;
-    __asm nop __endasm;
-    __asm nop __endasm;
-    __asm nop __endasm;
+    // at 32kHz, instructions are already slow enough - no extra delay needed
 }
 
 void i2c_init(void) {
