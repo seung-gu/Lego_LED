@@ -16,9 +16,13 @@
 #define SCL_OUT()  (DDRB |= (1 << SCL_BIT))
 
 static void i2c_delay(void) {
-    // ~2us at 1MHz
-    __asm__ __volatile__("nop");
-    __asm__ __volatile__("nop");
+    // ~2us at 8MHz
+    __asm__ __volatile__(
+        "nop\n\t nop\n\t nop\n\t nop\n\t"
+        "nop\n\t nop\n\t nop\n\t nop\n\t"
+        "nop\n\t nop\n\t nop\n\t nop\n\t"
+        "nop\n\t nop\n\t nop\n\t nop\n\t"
+    );
 }
 
 void i2c_init(void) {

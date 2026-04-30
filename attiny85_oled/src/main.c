@@ -19,6 +19,15 @@ static void delay_ms(uint16_t ms) {
     }
 }
 
+// 128kHz용 delay
+static void delay_ms_128k(uint16_t ms) {
+    volatile uint16_t i;
+    while (ms--) {
+        i = 12;  // ~1ms at 128kHz
+        while (i--);
+    }
+}
+
 // read VCC using internal 1.1V bandgap reference
 static uint16_t read_vcc(void) {
     ADMUX = 0x0C;  // VCC ref, bandgap input
@@ -44,22 +53,12 @@ static int16_t map_val(int16_t x, int16_t in_min, int16_t in_max,
 // watchdog interrupt - empty, just wakes MCU
 ISR(WDT_vect) {}
 
-// enter power-down sleep, wake by watchdog after ~250ms
-static void sleep_250ms(void) {
+// power-down sleep with specified WDP bits
+static void sleep_wdt_raw(uint8_t wdp) {
     cli();
     MCUSR &= ~(1 << WDRF);
-    // timed sequence: must write WDP within 4 cycles of setting WDCE
-    __asm__ __volatile__(
-        "ldi r16, %[wdce_wde]"   "\n\t"
-        "ldi r17, %[wdie_wdp]"   "\n\t"
-        "out %[wdtcr], r16"      "\n\t"
-        "out %[wdtcr], r17"      "\n\t"
-        :
-        : [wdtcr] "I" (_SFR_IO_ADDR(WDTCR)),
-          [wdce_wde] "M" ((1 << WDCE) | (1 << WDE)),
-          [wdie_wdp] "M" ((1 << WDIE) | (1 << WDP1))
-        : "r16", "r17"
-    );
+    WDTCR = (1 << WDCE) | (1 << WDE);
+    WDTCR = (1 << WDIE) | wdp;
     sei();
 
     set_sleep_mode(SLEEP_MODE_PWR_DOWN);
@@ -67,20 +66,16 @@ static void sleep_250ms(void) {
     sleep_cpu();
     sleep_disable();
 
-    // disable watchdog
     cli();
     MCUSR &= ~(1 << WDRF);
-    __asm__ __volatile__(
-        "ldi r16, %[wdce_wde]"   "\n\t"
-        "ldi r17, 0"             "\n\t"
-        "out %[wdtcr], r16"      "\n\t"
-        "out %[wdtcr], r17"      "\n\t"
-        :
-        : [wdtcr] "I" (_SFR_IO_ADDR(WDTCR)),
-          [wdce_wde] "M" ((1 << WDCE) | (1 << WDE))
-        : "r16", "r17"
-    );
+    WDTCR = (1 << WDCE) | (1 << WDE);
+    WDTCR = 0;
     sei();
+}
+
+// ~125ms single sleep
+static void sleep_125ms(void) {
+    sleep_wdt_raw((1 << WDP1) | (1 << WDP0)) ;
 }
 
 int main(void) {
@@ -92,6 +87,7 @@ int main(void) {
     int16_t voltage, gauge;
 
     ADCSRA &= ~(1 << ADEN);
+    ACSR |= (1 << ACD);              // Analog Comparator 비활성화
     PRR = (1 << PRTIM1) | (1 << PRUSI);
 
     i2c_init();
@@ -162,7 +158,7 @@ int main(void) {
         anim_frame = (anim_frame + 1) % DUCK_FRAMES;
         pre_x0 = x0;
 
-        sleep_250ms();
+        sleep_125ms();
     }
 
     return 0;
