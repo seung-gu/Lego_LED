@@ -90,6 +90,15 @@ int main(void) {
     ACSR |= (1 << ACD);              // Analog Comparator 비활성화
     PRR = (1 << PRTIM1) | (1 << PRUSI);
 
+    // OLED reset on PB4 (active LOW, externally pulled up)
+    DDRB  |= (1 << PB4);
+    PORTB |= (1 << PB4);             // de-assert
+    delay_ms(10);
+    PORTB &= ~(1 << PB4);            // assert reset
+    delay_ms(10);
+    PORTB |= (1 << PB4);             // release
+    delay_ms(10);
+
     i2c_init();
     ssd1306_init();
 
