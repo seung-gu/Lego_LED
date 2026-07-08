@@ -1,0 +1,167 @@
+// 🦆 STM32L412KBU6 커스텀 보드 - LCD(ST7735 0.42" 96x54) 살리기 테스트
+// 핀맵: SPI1  SCK=PA5(AF5)  MOSI=PA7(AF5)
+//       DC=PA1  RESET=PA2  CS=PA3  백라이트(LED-A)=PA0
+//       플래시 CS=PC14 → HIGH로 묶어 플래시 비활성 (SPI1 공유 버스)
+// 확인: 화면이 빨강→초록→파랑 순환하면 성공. heartbeat로 코어 동작도 확인.
+
+#include "stm32l4xx_hal.h"
+
+#define LCD_W  96
+#define LCD_H  54
+#define COL_OFFSET 16     // 0.42" 패널 중앙 영역 오프셋 (F411과 동일)
+#define ROW_OFFSET 0
+
+#define CS_LOW()    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, GPIO_PIN_RESET)
+#define CS_HIGH()   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, GPIO_PIN_SET)
+#define DC_CMD()    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_RESET)
+#define DC_DAT()    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET)
+#define RST_LOW()   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, GPIO_PIN_RESET)
+#define RST_HIGH()  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, GPIO_PIN_SET)
+#define BL_ON()     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_SET)
+#define FLASH_CS_HIGH() HAL_GPIO_WritePin(GPIOC, GPIO_PIN_14, GPIO_PIN_SET)
+
+volatile uint32_t heartbeat = 0;
+SPI_HandleTypeDef hspi1;
+
+void SysTick_Handler(void) { HAL_IncTick(); }
+
+static void Error_Handler(void) { while (1) {} }
+
+static void SystemClock_Config(void)
+{
+    RCC_OscInitTypeDef osc = {0};
+    RCC_ClkInitTypeDef clk = {0};
+
+    // MSI를 32MHz로 직접 구동 (PLL 미사용 → 저전력)
+    osc.OscillatorType      = RCC_OSCILLATORTYPE_MSI;
+    osc.MSIState            = RCC_MSI_ON;
+    osc.MSICalibrationValue = RCC_MSICALIBRATION_DEFAULT;
+    osc.MSIClockRange       = RCC_MSIRANGE_10;   // 32MHz
+    osc.PLL.PLLState        = RCC_PLL_NONE;
+    if (HAL_RCC_OscConfig(&osc) != HAL_OK) Error_Handler();
+
+    clk.ClockType      = RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_HCLK
+                       | RCC_CLOCKTYPE_PCLK1  | RCC_CLOCKTYPE_PCLK2;
+    clk.SYSCLKSource   = RCC_SYSCLKSOURCE_MSI;
+    clk.AHBCLKDivider  = RCC_SYSCLK_DIV1;
+    clk.APB1CLKDivider = RCC_HCLK_DIV1;     // PCLK1 = 32MHz
+    clk.APB2CLKDivider = RCC_HCLK_DIV1;     // PCLK2 = 32MHz
+    if (HAL_RCC_ClockConfig(&clk, FLASH_LATENCY_1) != HAL_OK) Error_Handler();
+}
+
+static void GPIO_SPI_Init(void)
+{
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+    __HAL_RCC_GPIOC_CLK_ENABLE();
+    __HAL_RCC_SPI1_CLK_ENABLE();
+
+    GPIO_InitTypeDef g = {0};
+
+    // PA5(SCK)/PA7(MOSI) = SPI1 (AF5)
+    g.Pin       = GPIO_PIN_5 | GPIO_PIN_7;
+    g.Mode      = GPIO_MODE_AF_PP;
+    g.Pull      = GPIO_NOPULL;
+    g.Speed     = GPIO_SPEED_FREQ_HIGH;
+    g.Alternate = GPIO_AF5_SPI1;
+    HAL_GPIO_Init(GPIOA, &g);
+
+    // PA0(BL)/PA1(DC)/PA2(RST)/PA3(CS) = GPIO 출력
+    g.Pin       = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3;
+    g.Mode      = GPIO_MODE_OUTPUT_PP;
+    g.Pull      = GPIO_NOPULL;
+    g.Alternate = 0;
+    HAL_GPIO_Init(GPIOA, &g);
+
+    // PC14 = 플래시 CS, HIGH로 묶어서 비활성화
+    g.Pin       = GPIO_PIN_14;
+    HAL_GPIO_Init(GPIOC, &g);
+    FLASH_CS_HIGH();
+
+    CS_HIGH();
+    BL_ON();   // 백라이트 ON
+
+    hspi1.Instance               = SPI1;
+    hspi1.Init.Mode              = SPI_MODE_MASTER;
+    hspi1.Init.Direction         = SPI_DIRECTION_2LINES;
+    hspi1.Init.DataSize          = SPI_DATASIZE_8BIT;
+    hspi1.Init.CLKPolarity       = SPI_POLARITY_LOW;   // mode 0
+    hspi1.Init.CLKPhase          = SPI_PHASE_1EDGE;
+    hspi1.Init.NSS               = SPI_NSS_SOFT;
+    hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+    hspi1.Init.FirstBit          = SPI_FIRSTBIT_MSB;
+    hspi1.Init.TIMode            = SPI_TIMODE_DISABLE;
+    hspi1.Init.CRCCalculation    = SPI_CRCCALCULATION_DISABLE;
+    hspi1.Init.NSSPMode          = SPI_NSS_PULSE_DISABLE;
+    HAL_SPI_Init(&hspi1);
+}
+
+static void LCD_WriteCmd(uint8_t cmd)
+{
+    DC_CMD(); CS_LOW();
+    HAL_SPI_Transmit(&hspi1, &cmd, 1, HAL_MAX_DELAY);
+    CS_HIGH();
+}
+
+static void LCD_WriteData(uint8_t data)
+{
+    DC_DAT(); CS_LOW();
+    HAL_SPI_Transmit(&hspi1, &data, 1, HAL_MAX_DELAY);
+    CS_HIGH();
+}
+
+static void LCD_Reset(void)
+{
+    RST_HIGH(); HAL_Delay(5);
+    RST_LOW();  HAL_Delay(20);
+    RST_HIGH(); HAL_Delay(150);
+}
+
+static void LCD_Init(void)
+{
+    LCD_WriteCmd(0x01); HAL_Delay(150);   // SWRESET
+    LCD_WriteCmd(0x11); HAL_Delay(150);   // SLPOUT
+    LCD_WriteCmd(0x3A); LCD_WriteData(0x05);  // COLMOD = RGB565
+    LCD_WriteCmd(0x36); LCD_WriteData(0x08);  // MADCTL = BGR
+    LCD_WriteCmd(0x20);                   // INVOFF
+    LCD_WriteCmd(0x29); HAL_Delay(100);   // DISPON
+}
+
+static void LCD_FillColor(uint16_t color)
+{
+    uint8_t hi = color >> 8, lo = color & 0xFF;
+
+    LCD_WriteCmd(0x2A);   // CASET
+    LCD_WriteData(0); LCD_WriteData(COL_OFFSET);
+    LCD_WriteData(0); LCD_WriteData(COL_OFFSET + LCD_W - 1);
+
+    LCD_WriteCmd(0x2B);   // RASET
+    LCD_WriteData(0); LCD_WriteData(ROW_OFFSET);
+    LCD_WriteData(0); LCD_WriteData(ROW_OFFSET + LCD_H - 1);
+
+    LCD_WriteCmd(0x2C);   // RAMWR
+    DC_DAT(); CS_LOW();
+    for (uint32_t i = 0; i < (uint32_t)LCD_W * LCD_H; i++) {
+        HAL_SPI_Transmit(&hspi1, &hi, 1, HAL_MAX_DELAY);
+        HAL_SPI_Transmit(&hspi1, &lo, 1, HAL_MAX_DELAY);
+    }
+    CS_HIGH();
+}
+
+int main(void)
+{
+    HAL_Init();
+    SystemClock_Config();  // MSI 32MHz
+    GPIO_SPI_Init();
+    LCD_Reset();
+    LCD_Init();
+
+    const uint16_t colors[3] = {0xF800, 0x07E0, 0x001F};  // 빨강, 초록, 파랑
+    int idx = 0;
+
+    while (1) {
+        LCD_FillColor(colors[idx]);
+        idx = (idx + 1) % 3;
+        HAL_Delay(500);
+        heartbeat++;
+    }
+}
