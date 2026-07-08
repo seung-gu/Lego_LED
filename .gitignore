@@ -1,2 +1,5 @@
 stm32/u375/build*/
 stm32/l412/.pio/
+stm32/f411_disco/.pio/
+stm32/f411_disco/.vscode/
+stm32/f411_disco/.claude/
